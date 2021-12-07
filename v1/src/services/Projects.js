@@ -1,7 +1,10 @@
 const Project = require("../models/Project");
 const list = (data) => {
   // list all projects
-  return Project.find({});
+  return Project.find({}).populate({
+    path: 'user_id',
+    select: 'full_name email'
+  });
 };
 
 const insert = (data) => {
@@ -9,8 +12,18 @@ const insert = (data) => {
   const project = new Project(data);
   return project.save();
 };
+const modify = async (data, id) => {
+  // db update Project Model
+  return Project.findByIdAndUpdate(id, data, { new: true });
+};
+const remove = async (id) => {
+  // db update Project Model
+  return Project.findByIdAndRemove(id);
+};
 
 module.exports = {
   insert,
   list,
+  modify,
+  remove
 };

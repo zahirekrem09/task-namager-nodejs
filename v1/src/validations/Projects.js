@@ -4,9 +4,14 @@ const createValidation = Joi.object({
   name: Joi.string().min(5).max(100).required(),
   description: Joi.string().min(5).required(),
 });
+const updateValidation = Joi.object({
+  name: Joi.string().min(5).max(100).required(),
+  description: Joi.string().min(5).required()
+});
 
 module.exports = {
   createValidation,
+  updateValidation
 };
 
 // const schema = Joi.object({
