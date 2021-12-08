@@ -65,9 +65,7 @@ const update = (req, res) => {
           message: 'Project not found'
         });
       }
-      res
-        .status(httpStatus.CREATED)
-        .json({ message: 'Project updated successfully', data: updateData });
+      res.status(httpStatus.OK).json({ message: 'Project updated successfully', data: updateData });
     })
     .catch((err) => {
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({

@@ -1,5 +1,6 @@
 const httpStatus = require("http-status");
-const { insert, list, loginUser } = require("../services/Users");
+const uuid = require('uuid');
+const { insert, list, loginUser, modify } = require('../services/Users');
 const projectService = require('../services/Projects');
 const {
   passwordHash,
@@ -7,6 +8,8 @@ const {
   generareRefreshToken
 } = require('../scripts/utils/helper');
 const User = require('../models/User');
+const { data } = require('../scripts/logger/Projects');
+const eventEmitter = require('../scripts/events/eventEmitter');
 
 /*
 get users
@@ -104,6 +107,28 @@ const login = (req, res) => {
       });
     });
 };
+/*
+update user
+@route PATCH /api/v1/users/update
+@access private
+*/
+const update = (req, res) => {
+  modify({ _id: req.user.id }, req.body)
+    .then((updateData) => {
+      if (!updateData) {
+        return res.status(httpStatus.NOT_FOUND).json({
+          message: 'User not found'
+        });
+      }
+      res.status(httpStatus.OK).json({ message: 'User updated successfully', data: updateData });
+    })
+    .catch((err) => {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error update user',
+        err
+      });
+    });
+};
 
 /*
 list user projects
@@ -126,10 +151,45 @@ const projectList = (req, res) => {
       });
     });
 };
+/*
+reset user password
+@route POST /api/v1/users/reset-password
+@access public
+*/
+const resetPassword = (req, res) => {
+  //TODO: send mail link  to user  than change and reset password
 
+  const newPassword = uuid.v4()?.split('-')[0] || `usr-${new Date().getTime()}`;
+  modify({ email: req.body.email }, { password: passwordHash(newPassword) })
+    .then((user) => {
+      if (!user) {
+        return res.status(httpStatus.NOT_FOUND).json({
+          message: 'User not found'
+        });
+      }
+      // !! send email events
+      eventEmitter.emit('send_mail', {
+        to: user.email,
+        subject: 'Reset Password ✔', // Subject line
+        html: `<b>Your Password : ${newPassword}</b>` // html body
+      });
+      res.status(httpStatus.OK).json({
+        message: 'Password reset successfully and sent to your email',
+        data: user
+      });
+    })
+    .catch((err) => {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error reset password',
+        err
+      });
+    });
+};
 module.exports = {
   create,
   index,
   login,
-  projectList
+  update,
+  projectList,
+  resetPassword
 };
