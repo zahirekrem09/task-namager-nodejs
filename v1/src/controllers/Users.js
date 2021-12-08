@@ -1,11 +1,12 @@
 const httpStatus = require("http-status");
 const { insert, list, loginUser } = require("../services/Users");
+const projectService = require('../services/Projects');
 const {
   passwordHash,
   generareAccessToken,
-  generareRefreshToken,
-} = require("../scripts/utils/helper");
-const User = require("../models/User");
+  generareRefreshToken
+} = require('../scripts/utils/helper');
+const User = require('../models/User');
 
 /*
 get users
@@ -16,14 +17,14 @@ const index = (req, res) => {
   list()
     .then((data) => {
       res.status(httpStatus.OK).json({
-        message: "Users listed successfully",
-        data,
+        message: 'Users listed successfully',
+        data
       });
     })
     .catch((err) => {
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-        message: "Error listing users",
-        err,
+        message: 'Error listing users',
+        err
       });
     });
 };
@@ -38,26 +39,26 @@ const create = async (req, res) => {
   const checkUser = await User.findOne({ email: req.body.email });
   if (checkUser) {
     return res.status(httpStatus.CONFLICT).json({
-      message: "User already exists",
+      message: 'User already exists'
     });
   }
   const cryptedPassword = passwordHash(req.body.password);
   const userData = {
     ...req.body,
-    password: cryptedPassword,
+    password: cryptedPassword
   };
 
   insert(userData) // insert user
     .then((data) => {
       res.status(httpStatus.CREATED).json({
-        message: "User created successfully",
-        data,
+        message: 'User created successfully',
+        data
       });
     })
     .catch((err) => {
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-        message: "Error creating user",
-        err,
+        message: 'Error creating user',
+        err
       });
     });
 };
@@ -70,13 +71,13 @@ const login = (req, res) => {
   const cryptedPassword = passwordHash(req.body.password);
   const userData = {
     ...req.body,
-    password: cryptedPassword,
+    password: cryptedPassword
   };
   loginUser(userData)
     .then((user) => {
       if (!user) {
         return res.status(httpStatus.UNAUTHORIZED).json({
-          message: "Invalid credentials",
+          message: 'Invalid credentials'
           //   data: null,
         });
       }
@@ -85,21 +86,43 @@ const login = (req, res) => {
         ...user._doc, // or user.toObject()
         tokens: {
           accessToken: generareAccessToken(user),
-          refreshToken: generareRefreshToken(user),
-        },
+          refreshToken: generareRefreshToken(user)
+        }
       };
 
       delete userData.password;
 
       res.status(httpStatus.CREATED).json({
-        message: "User login successfully",
-        data: userData,
+        message: 'User login successfully',
+        data: userData
       });
     })
     .catch((err) => {
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-        message: "Error login user",
-        err,
+        message: 'Error login user',
+        err
+      });
+    });
+};
+
+/*
+list user projects
+@route GET /api/v1/users/projects
+@access private
+*/
+const projectList = (req, res) => {
+  projectService
+    .list({ user_id: req.user.id })
+    .then((data) => {
+      res.status(httpStatus.OK).json({
+        message: 'Projects listed successfully',
+        data
+      });
+    })
+    .catch((err) => {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error user projects list',
+        err
       });
     });
 };
@@ -108,4 +131,5 @@ module.exports = {
   create,
   index,
   login,
+  projectList
 };

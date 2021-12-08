@@ -77,7 +77,7 @@ const update = (req, res) => {
     });
 };
 /*
-update project
+delete project
 @route DELETE /api/v1/projects/delete
 @access private
 @params id
