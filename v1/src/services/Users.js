@@ -16,10 +16,14 @@ const loginUser = (data) => {
 const modify = (where, data) => {
   return User.findOneAndUpdate(where, data, { new: true }).select('-password');
 };
+const remove = async (id) => {
+  return User.findByIdAndRemove(id);
+};
 
 module.exports = {
   insert,
   list,
   loginUser,
-  modify
+  modify,
+  remove
 };

@@ -3,7 +3,7 @@ const list = (where) => {
   // list all projects
   return Project.find(where || {}).populate({
     path: 'user_id',
-    select: 'full_name email'
+    select: 'full_name email profile_image'
   });
 };
 

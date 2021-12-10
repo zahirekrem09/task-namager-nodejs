@@ -1,6 +1,6 @@
 const httpStatus = require("http-status");
 const uuid = require('uuid');
-const { insert, list, loginUser, modify } = require('../services/Users');
+const { insert, list, loginUser, modify, remove } = require('../services/Users');
 const projectService = require('../services/Projects');
 const {
   passwordHash,
@@ -8,8 +8,8 @@ const {
   generareRefreshToken
 } = require('../scripts/utils/helper');
 const User = require('../models/User');
-const { data } = require('../scripts/logger/Projects');
 const eventEmitter = require('../scripts/events/eventEmitter');
+const path = require('path');
 
 /*
 get users
@@ -95,7 +95,7 @@ const login = (req, res) => {
 
       delete userData.password;
 
-      res.status(httpStatus.CREATED).json({
+      res.status(httpStatus.OK).json({
         message: 'User login successfully',
         data: userData
       });
@@ -125,6 +125,34 @@ const update = (req, res) => {
     .catch((err) => {
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Error update user',
+        err
+      });
+    });
+};
+/*
+delete user
+@route DELETE /api/v1/users/delete:id
+@access private
+@params id
+*/
+const destroy = (req, res) => {
+  if (!req.params.id) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      message: 'User id is required'
+    });
+  }
+  remove(req.params.id)
+    .then((deleteData) => {
+      if (!deleteData) {
+        return res.status(httpStatus.NOT_FOUND).json({
+          message: 'User not found'
+        });
+      }
+      res.status(httpStatus.OK).json({ message: 'User delete successfully', data: deleteData });
+    })
+    .catch((err) => {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error update project',
         err
       });
     });
@@ -185,11 +213,85 @@ const resetPassword = (req, res) => {
       });
     });
 };
+/*
+change password user
+@route post /api/v1/users/change-password
+@access private
+*/
+const changePassword = (req, res) => {
+  // TODO: check old password and change new password
+  req.body.password = passwordHash(req.body.password);
+  modify({ _id: req.user.id }, req.body)
+    .then((updateData) => {
+      if (!updateData) {
+        return res.status(httpStatus.NOT_FOUND).json({
+          message: 'User not found'
+        });
+      }
+      res.status(httpStatus.OK).json({ message: 'User updated successfully', data: updateData });
+    })
+    .catch((err) => {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error update user',
+        err
+      });
+    });
+};
+/*
+update profile image  user(req.files)
+@route post /api/v1/users/update-profile-image
+@access private
+*/
+const updateProfileImage = (req, res) => {
+  //TODO:  use coludunary storage
+  //TODO:  delete old image https://www.codegrepper.com/code-examples/javascript/delete+image+from+folder+node+js
+  if (!req.files?.profile_image) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      message: 'Profile Image is required'
+    });
+  }
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+  if (!allowedMimeTypes.includes(req.files.profile_image.mimetype)) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      message: 'Profile Image is not valid just jpeg,png,gif'
+    });
+  }
+  const extenssion = path.extname(req.files.profile_image.name);
+  const fileName = `${req.user.id}_${new Date().getTime()}${extenssion}`;
+  const folderPath = path.join(__dirname, '../', 'uploads/users', fileName);
+  req.files.profile_image.mv(folderPath, (err) => {
+    if (err) {
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error profile image upload',
+        err
+      });
+    }
+
+    modify({ _id: req.user.id }, { profile_image: fileName })
+      .then((updateData) => {
+        if (!updateData) {
+          return res.status(httpStatus.NOT_FOUND).json({
+            message: 'User not found'
+          });
+        }
+        res.status(httpStatus.OK).json({ message: 'User updated successfully', data: updateData });
+      })
+      .catch((err) => {
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+          message: 'Error update user',
+          err
+        });
+      });
+  });
+};
 module.exports = {
   create,
   index,
   login,
   update,
+  destroy,
   projectList,
-  resetPassword
+  resetPassword,
+  changePassword,
+  updateProfileImage
 };

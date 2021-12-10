@@ -1,9 +1,11 @@
 const express = require("express");
 const helmet = require("helmet");
-const config = require("./config");
-const loaders = require("./loaders");
-const { ProjectRoutes, UserRoutes } = require("./routes");
+const fileUpload = require('express-fileupload');
+const config = require('./config');
+const loaders = require('./loaders');
+const { ProjectRoutes, UserRoutes } = require('./routes');
 const events = require('./scripts/events');
+const path = require('path');
 
 // !! start all config
 config();
@@ -14,10 +16,20 @@ events();
 
 // !! start express app
 const app = express();
+
+// !! static files server
+app.use('/uploads', express.static(path.join(__dirname, './', 'uploads')));
+
 // !! json parser middleware
 app.use(express.json());
 // !! helmet header protection middleware
 app.use(helmet());
+// !! file upload middleware  req.files
+app.use(
+  fileUpload({
+    limits: { fileSize: 5 * 1024 * 1024 }
+  })
+);
 
 const PORT = process.env.PORT || 3232;
 
