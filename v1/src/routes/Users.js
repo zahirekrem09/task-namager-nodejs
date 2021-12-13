@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require('express');
 const {
   create,
   index,
@@ -27,12 +27,7 @@ router.post(
   validate(validationSchemas.changePasswordValidation),
   changePassword
 );
-router.post(
-  '/update-profile-image',
-  authenticate,
-
-  updateProfileImage
-);
+router.post('/update-profile-image', authenticate, updateProfileImage);
 router.get('/projects', authenticate, projectList);
 router.delete('/delete/:id', authenticate, destroy);
 
